@@ -73,13 +73,15 @@ namespace Lykke.Service.PostProcessing.Modules
                     Messaging.Serialization.SerializationFormat.ProtoBuf,
                     environment: "lykke")),
 
+                Register.BoundedContext(BoundedContext.Name),
+
                 Register.DefaultRouting
                     .PublishingCommands(
                         typeof(SaveCashinCommand),
                         typeof(SaveCashoutCommand),
                         typeof(SaveTransferCommand),
                         typeof(SaveExecutionCommand))
-                    .To("history").With(defaultRoute));
+                    .To(Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name).With(defaultRoute));
         }
     }
 }

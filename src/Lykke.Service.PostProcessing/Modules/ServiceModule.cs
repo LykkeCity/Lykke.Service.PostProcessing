@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Lykke.Service.PostProcessing.RabbitSubscribers;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
 
@@ -15,7 +16,12 @@ namespace Lykke.Service.PostProcessing.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
-            // Do not register entire settings in container, pass necessary settings to services which requires them
+            builder.RegisterType<MeRabbitSubscriber>()
+                .As<IStartable>()
+                .AutoActivate()
+                .SingleInstance()
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit));
+
         }
     }
 }

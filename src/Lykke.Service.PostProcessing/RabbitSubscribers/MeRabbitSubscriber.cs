@@ -81,7 +81,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Volume = decimal.Parse(message.CashIn.Volume),
                 AssetId = message.CashIn.AssetId,
                 Timestamp = message.Header.Timestamp,
-                FeeSize = fee != null ? decimal.Parse(fee.Volume) : 0m
+                FeeSize = ParseNullabe(fee?.Volume)
             };
             _cqrsEngine.SendCommand(command, "PostProcessing", "history");
             return Task.CompletedTask;
@@ -97,7 +97,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Volume = decimal.Parse(message.CashOut.Volume),
                 AssetId = message.CashOut.AssetId,
                 Timestamp = message.Header.Timestamp,
-                FeeSize = fee != null ? decimal.Parse(fee.Volume) : 0m
+                FeeSize = ParseNullabe(fee?.Volume)
             };
             _cqrsEngine.SendCommand(command, "PostProcessing", "history");
             return Task.CompletedTask;
@@ -115,7 +115,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 AssetId = message.CashTransfer.AssetId,
                 Timestamp = message.Header.Timestamp,
                 FeeSourceWalletId = fee != null ? Guid.Parse(fee.SourceWalletId) : (Guid?)null,
-                FeeSize = fee != null ? decimal.Parse(fee.Volume) : 0m
+                FeeSize = ParseNullabe(fee?.Volume)
             };
             _cqrsEngine.SendCommand(command, "PostProcessing", "history");
             return Task.CompletedTask;
@@ -133,11 +133,11 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     Volume = decimal.Parse(x.Volume),
                     AssetPairId = x.AssetPairId,
                     CreateDt = x.CreatedAt,
-                    LowerLimitPrice = decimal.Parse(x.LowerLimitPrice),
-                    LowerPrice = decimal.Parse(x.LowerPrice),
+                    LowerLimitPrice = ParseNullabe(x.LowerLimitPrice),
+                    LowerPrice = ParseNullabe(x.LowerPrice) ,
                     MatchDt = x.LastMatchTime,
                     MatchingId = Guid.Parse(x.Id),
-                    Price = decimal.Parse(x.Price),
+                    Price = ParseNullabe(x.Price) ,
                     RegisterDt = x.Registered,
                     RejectReason = x.RejectReason,
                     RemainingVolume = decimal.Parse(x.RemainingVolume),
@@ -146,9 +146,9 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     StatusDt = x.StatusDate,
                     Straight = x.Straight ?? true,
                     Type = (Lykke.Service.History.Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
-                    UpperLimitPrice = decimal.Parse(x.UpperLimitPrice),
-                    UpperPrice = decimal.Parse(x.UpperPrice),
-                    Trades = x.Trades.Select(t => new Lykke.Service.History.Contracts.Cqrs.Models.TradeModel
+                    UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
+                    UpperPrice = ParseNullabe(x.UpperPrice),
+                    Trades = x.Trades?.Select(t => new Lykke.Service.History.Contracts.Cqrs.Models.TradeModel
                     {
                         WalletId = Guid.Parse(x.WalletId),
                         Volume = decimal.Parse(t.Volume),
@@ -157,7 +157,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                         Timestamp = t.Timestamp,
                         AssetPairId = x.AssetPairId,
                         Price = decimal.Parse(t.Price),
-                        FeeSize = decimal.Parse(t.Fees?.FirstOrDefault()?.Volume ?? "0"),
+                        FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
                         FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
                         Index = t.Index,
                         OppositeAssetId = t.OppositeAssetId,
@@ -166,8 +166,13 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     })
                 }).ToList()
             };
-            _cqrsEngine.SendCommand(command, "PostProcessing", "history");
+            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
             return Task.CompletedTask;
+        }
+
+        private decimal? ParseNullabe(string value)
+        {
+            return !string.IsNullOrEmpty(value) ? decimal.Parse(value) : (decimal?) null;
         }
 
         public void Dispose()
