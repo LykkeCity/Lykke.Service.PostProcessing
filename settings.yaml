@@ -4,6 +4,17 @@ PostProcessingService:
             settings-key: PostProcessingService-LogsConnString
             types:
                 - AzureTableStorage
+    MatchingEngineRabbit:
+        ConnectionString:
+            settings-key: MatchingEngineRabbitMqConnectionString
+            types:
+                - RabbitMq
+        Exchange:
+            settings-key: MatchingEngineSpotEventsExchange
+        AlternativeExchange:
+            settings-key: AlternateMatchingEngineRabbitMqConnectionString
+            types:
+                - RabbitMq
     Cqrs:
         RabbitConnString:
             settings-key: CqrsRabbitConnString

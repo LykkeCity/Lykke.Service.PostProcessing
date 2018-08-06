@@ -23,7 +23,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly ICqrsEngine _cqrsEngine;
         private readonly List<IStopable> _subscribers = new List<IStopable>();
 
-        private const string QueueName = "lykke.balances.updates";
+        private const string QueueName = "lykke.spot.matching.engine.out.events.post-processing";
         private const bool QueueDurable = true;
 
         public MeRabbitSubscriber(
