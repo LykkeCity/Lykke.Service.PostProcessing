@@ -83,7 +83,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Timestamp = message.Header.Timestamp,
                 FeeSize = ParseNullabe(fee?.Volume)
             };
-            _cqrsEngine.SendCommand(command, "PostProcessing", "history");
+            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
             return Task.CompletedTask;
         }
 
@@ -99,7 +99,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Timestamp = message.Header.Timestamp,
                 FeeSize = ParseNullabe(fee?.Volume)
             };
-            _cqrsEngine.SendCommand(command, "PostProcessing", "history");
+            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
             return Task.CompletedTask;
         }
 
@@ -117,7 +117,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 FeeSourceWalletId = fee != null ? Guid.Parse(fee.SourceWalletId) : (Guid?)null,
                 FeeSize = ParseNullabe(fee?.Volume)
             };
-            _cqrsEngine.SendCommand(command, "PostProcessing", "history");
+            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
             return Task.CompletedTask;
         }
 
