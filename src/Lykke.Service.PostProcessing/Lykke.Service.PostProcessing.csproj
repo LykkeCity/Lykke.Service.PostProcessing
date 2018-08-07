@@ -27,11 +27,11 @@
     <PackageReference Include="Lykke.Messaging.RabbitMq" Version="2.1.0" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="7.2.0" />
     <PackageReference Include="Lykke.Sdk" Version="5.0.0" />
-    <PackageReference Include="Lykke.Service.History.Contracts" Version="1.0.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.1.2" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.1.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\client\Lykke.Service.PostProcessing.Contracts\Lykke.Service.PostProcessing.Contracts.csproj" />
     <ProjectReference Include="..\Lykke.Service.PostProcessing.AzureRepositories\Lykke.Service.PostProcessing.AzureRepositories.csproj" />
     <ProjectReference Include="..\Lykke.Service.PostProcessing.Core\Lykke.Service.PostProcessing.Core.csproj" />
     <ProjectReference Include="..\Lykke.Service.PostProcessing.Services\Lykke.Service.PostProcessing.Services.csproj" />

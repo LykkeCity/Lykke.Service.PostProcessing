@@ -6,7 +6,7 @@ using Lykke.Cqrs.Configuration;
 using Lykke.Messaging;
 using Lykke.Messaging.Contract;
 using Lykke.Messaging.RabbitMq;
-using Lykke.Service.History.Contracts.Cqrs.Commands;
+using Lykke.Service.PostProcessing.Contracts.Cqrs.Events;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
 
@@ -60,7 +60,7 @@ namespace Lykke.Service.PostProcessing.Modules
             IMessagingEngine messagingEngine,
             ILogFactory logFactory)
         {
-            const string defaultRoute = "commands";
+            const string defaultRoute = "self";
 
             return new CqrsEngine(
                 logFactory,
@@ -73,15 +73,15 @@ namespace Lykke.Service.PostProcessing.Modules
                     Messaging.Serialization.SerializationFormat.ProtoBuf,
                     environment: "lykke")),
 
-                Register.BoundedContext(BoundedContext.Name),
+                Register.BoundedContext(BoundedContext.Name)
+                    .PublishingEvents(
+                        typeof(CashInProcessedEvent),
+                        typeof(CashOutProcessedEvent),
+                        typeof(CashTransferProcessedEvent),
+                        typeof(ExecutionProcessedEvent))
+                    .With(defaultRoute),
 
-                Register.DefaultRouting
-                    .PublishingCommands(
-                        typeof(SaveCashinCommand),
-                        typeof(SaveCashoutCommand),
-                        typeof(SaveTransferCommand),
-                        typeof(SaveExecutionCommand))
-                    .To(Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name).With(defaultRoute));
+                Register.DefaultRouting);
         }
     }
 }

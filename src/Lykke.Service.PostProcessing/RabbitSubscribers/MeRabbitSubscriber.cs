@@ -11,6 +11,8 @@ using Lykke.MatchingEngine.Connector.Models.Events;
 using Lykke.RabbitMqBroker;
 using Lykke.RabbitMqBroker.Deduplication;
 using Lykke.RabbitMqBroker.Subscriber;
+using Lykke.Service.PostProcessing.Contracts.Cqrs.Events;
+using Lykke.Service.PostProcessing.Contracts.Cqrs.Models;
 using Lykke.Service.PostProcessing.Settings;
 
 namespace Lykke.Service.PostProcessing.RabbitSubscribers
@@ -74,7 +76,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private Task ProcessMessageAsync(CashInEvent message)
         {
             var fee = message.CashIn.Fees?.FirstOrDefault()?.Transfer;
-            var command = new Lykke.Service.History.Contracts.Cqrs.Commands.SaveCashinCommand
+            var @event = new CashInProcessedEvent
             {
                 Id = Guid.Parse(message.Header.MessageId),
                 WalletId = Guid.Parse(message.CashIn.WalletId),
@@ -83,14 +85,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Timestamp = message.Header.Timestamp,
                 FeeSize = ParseNullabe(fee?.Volume)
             };
-            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
+            _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(CashOutEvent message)
         {
             var fee = message.CashOut.Fees?.FirstOrDefault()?.Transfer;
-            var command = new Lykke.Service.History.Contracts.Cqrs.Commands.SaveCashoutCommand
+            var @event = new CashOutProcessedEvent
             {
                 Id = Guid.Parse(message.Header.MessageId),
                 WalletId = Guid.Parse(message.CashOut.WalletId),
@@ -99,14 +101,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Timestamp = message.Header.Timestamp,
                 FeeSize = ParseNullabe(fee?.Volume)
             };
-            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
+            _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(CashTransferEvent message)
         {
             var fee = message.CashTransfer.Fees?.FirstOrDefault()?.Transfer;
-            var command = new Lykke.Service.History.Contracts.Cqrs.Commands.SaveTransferCommand
+            var @event = new CashTransferProcessedEvent
             {
                 Id = Guid.Parse(message.Header.MessageId),
                 FromWalletId = Guid.Parse(message.CashTransfer.FromWalletId),
@@ -117,16 +119,16 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 FeeSourceWalletId = fee != null ? Guid.Parse(fee.SourceWalletId) : (Guid?)null,
                 FeeSize = ParseNullabe(fee?.Volume)
             };
-            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
+            _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(ExecutionEvent message)
         {
-            var command = new Lykke.Service.History.Contracts.Cqrs.Commands.SaveExecutionCommand
+            var @event = new ExecutionProcessedEvent
             {
                 SequenceNumber = message.Header.SequenceNumber,
-                Orders = message.Orders.Select(x => new Lykke.Service.History.Contracts.Cqrs.Models.OrderModel
+                Orders = message.Orders.Select(x => new OrderModel
                 {
                     Id = Guid.Parse(x.ExternalId),
                     WalletId = Guid.Parse(x.WalletId),
@@ -141,14 +143,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     RegisterDt = x.Registered,
                     RejectReason = x.RejectReason,
                     RemainingVolume = decimal.Parse(x.RemainingVolume),
-                    Side = (Lykke.Service.History.Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
-                    Status = (Lykke.Service.History.Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
+                    Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
+                    Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
                     StatusDt = x.StatusDate,
                     Straight = x.Straight ?? true,
-                    Type = (Lykke.Service.History.Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
+                    Type = (Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
                     UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
                     UpperPrice = ParseNullabe(x.UpperPrice),
-                    Trades = x.Trades?.Select(t => new Lykke.Service.History.Contracts.Cqrs.Models.TradeModel
+                    Trades = x.Trades?.Select(t => new TradeModel
                     {
                         WalletId = Guid.Parse(x.WalletId),
                         Volume = decimal.Parse(t.Volume),
@@ -162,11 +164,11 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                         Index = t.Index,
                         OppositeAssetId = t.OppositeAssetId,
                         OppositeVolume = decimal.Parse(t.OppositeVolume),
-                        Role = (Lykke.Service.History.Contracts.Cqrs.Commands.Models.TradeRole)(int)t.Role
+                        Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role
                     })
                 }).ToList()
             };
-            _cqrsEngine.SendCommand(command, BoundedContext.Name, Lykke.Service.History.Contracts.Cqrs.BoundedContext.Name);
+            _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
             return Task.CompletedTask;
         }
 
