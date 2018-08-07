@@ -136,10 +136,10 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     AssetPairId = x.AssetPairId,
                     CreateDt = x.CreatedAt,
                     LowerLimitPrice = ParseNullabe(x.LowerLimitPrice),
-                    LowerPrice = ParseNullabe(x.LowerPrice) ,
+                    LowerPrice = ParseNullabe(x.LowerPrice),
                     MatchDt = x.LastMatchTime,
                     MatchingId = Guid.Parse(x.Id),
-                    Price = ParseNullabe(x.Price) ,
+                    Price = ParseNullabe(x.Price),
                     RegisterDt = x.Registered,
                     RejectReason = x.RejectReason,
                     RemainingVolume = decimal.Parse(x.RemainingVolume),
@@ -174,7 +174,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private decimal? ParseNullabe(string value)
         {
-            return !string.IsNullOrEmpty(value) ? decimal.Parse(value) : (decimal?) null;
+            return !string.IsNullOrEmpty(value) ? decimal.Parse(value) : (decimal?)null;
         }
 
         public void Dispose()
