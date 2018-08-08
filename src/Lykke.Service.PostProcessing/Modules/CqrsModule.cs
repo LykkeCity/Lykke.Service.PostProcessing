@@ -75,6 +75,7 @@ namespace Lykke.Service.PostProcessing.Modules
 
                 Register.BoundedContext(BoundedContext.Name)
                     .PublishingEvents(
+                        typeof(FeeChargedEvent),
                         typeof(CashInProcessedEvent),
                         typeof(CashOutProcessedEvent),
                         typeof(CashTransferProcessedEvent),

@@ -171,7 +171,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     Price = ParseNullabe(x.Price),
                     RegisterDt = x.Registered,
                     RejectReason = x.RejectReason,
-                    RemainingVolume = decimal.Parse(x.RemainingVolume),
+                    RemainingVolume = ParseNullabe(x.RemainingVolume),
                     Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
                     Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
                     StatusDt = x.StatusDate,

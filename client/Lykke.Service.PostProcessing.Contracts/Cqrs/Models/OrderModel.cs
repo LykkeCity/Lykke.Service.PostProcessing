@@ -51,7 +51,7 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Models
         public DateTime? MatchDt { get; set; }
 
         [ProtoMember(14, IsRequired = true)]
-        public decimal RemainingVolume { get; set; }
+        public decimal? RemainingVolume { get; set; }
 
         [ProtoMember(15, IsRequired = true)]
         public string RejectReason { get; set; }
