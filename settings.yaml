@@ -9,12 +9,13 @@ PostProcessingService:
             settings-key: MatchingEngineRabbitMqConnectionString
             types:
                 - RabbitMq
-        Exchange:
-            settings-key: MatchingEngineSpotEventsExchange
-        AlternativeExchange:
+        AlternativeConnectionString:
             settings-key: AlternateMatchingEngineRabbitMqConnectionString
             types:
                 - RabbitMq
+                - Optional
+        Exchange:
+            settings-key: MatchingEngineSpotEventsExchange
     Cqrs:
         RabbitConnString:
             settings-key: CqrsRabbitConnString

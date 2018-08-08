@@ -67,7 +67,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 .SetMessageReadStrategy(new MessageReadQueueStrategy())
                 .Subscribe(func)
                 .CreateDefaultBinding()
-                .SetAlternativeExchange(_rabbitMqSettings.AlternativeExchange)
+                .SetAlternativeExchange(_rabbitMqSettings.AlternativeConnectionString)
                 .SetDeduplicator(new InMemoryDeduplcator(TimeSpan.FromDays(7)))
                 .Start();
         }

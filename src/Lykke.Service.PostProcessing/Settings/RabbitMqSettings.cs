@@ -8,7 +8,9 @@ namespace Lykke.Service.PostProcessing.Settings
     {
         [AmqpCheck]
         public string ConnectionString { get; set; }
+        [AmqpCheck]
+        [Optional]
+        public string AlternativeConnectionString { get; set; }
         public string Exchange { get; set; }
-        public string AlternativeExchange { get; set; }
     }
 }
