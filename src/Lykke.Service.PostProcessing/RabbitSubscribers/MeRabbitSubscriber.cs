@@ -199,7 +199,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
 
-            foreach (var order in message.Orders)
+            foreach (var order in message.Orders.Where(x => x.Trades != null))
             {
                 var orderType = order.OrderType == OrderType.Market ? FeeOperationType.Trade : FeeOperationType.LimitTrade;
                 var orderId = order.Id;
