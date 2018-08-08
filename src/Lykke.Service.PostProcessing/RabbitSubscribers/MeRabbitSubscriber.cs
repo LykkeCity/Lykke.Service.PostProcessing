@@ -13,7 +13,9 @@ using Lykke.RabbitMqBroker.Deduplication;
 using Lykke.RabbitMqBroker.Subscriber;
 using Lykke.Service.PostProcessing.Contracts.Cqrs.Events;
 using Lykke.Service.PostProcessing.Contracts.Cqrs.Models;
+using Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums;
 using Lykke.Service.PostProcessing.Settings;
+using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 
 namespace Lykke.Service.PostProcessing.RabbitSubscribers
 {
@@ -86,6 +88,15 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 FeeSize = ParseNullabe(fee?.Volume)
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
+
+            var feeEvent = new FeeChargedEvent
+            {
+                OperationId = message.Header.MessageId,
+                OperationType = FeeOperationType.CashInOut,
+                Fee = message.CashIn.Fees?.ToJson()
+            };
+            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+
             return Task.CompletedTask;
         }
 
@@ -102,6 +113,15 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 FeeSize = ParseNullabe(fee?.Volume)
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
+
+            var feeEvent = new FeeChargedEvent
+            {
+                OperationId = message.Header.MessageId,
+                OperationType = FeeOperationType.CashInOut,
+                Fee = message.CashOut.Fees?.ToJson()
+            };
+            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+
             return Task.CompletedTask;
         }
 
@@ -120,6 +140,15 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 FeeSize = ParseNullabe(fee?.Volume)
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
+
+            var feeEvent = new FeeChargedEvent
+            {
+                OperationId = message.Header.MessageId,
+                OperationType = FeeOperationType.Transfer,
+                Fee = message.CashTransfer.Fees?.ToJson()
+            };
+            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+
             return Task.CompletedTask;
         }
 
@@ -169,6 +198,23 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 }).ToList()
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
+
+            foreach (var order in message.Orders)
+            {
+                var orderType = order.OrderType == OrderType.Market ? FeeOperationType.Trade : FeeOperationType.LimitTrade;
+                var orderId = order.Id;
+                foreach (var trade in order.Trades)
+                {
+                    var feeEvent = new FeeChargedEvent
+                    {
+                        OperationId = orderId,
+                        OperationType = orderType,
+                        Fee = trade.Fees?.ToJson()
+                    };
+                    _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                }
+            }
+
             return Task.CompletedTask;
         }
 
