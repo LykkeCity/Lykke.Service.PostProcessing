@@ -77,7 +77,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private Task ProcessMessageAsync(CashInEvent message)
         {
-            var fee = message.CashIn.Fees?.FirstOrDefault()?.Transfer;
+            var fees = message.CashIn.Fees;
+            var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashInProcessedEvent
             {
                 Id = Guid.Parse(message.Header.MessageId),
@@ -89,20 +90,24 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
 
-            var feeEvent = new FeeChargedEvent
+            if (fees != null)
             {
-                OperationId = message.Header.MessageId,
-                OperationType = FeeOperationType.CashInOut,
-                Fee = message.CashIn.Fees?.ToJson()
-            };
-            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                var feeEvent = new FeeChargedEvent
+                {
+                    OperationId = message.Header.MessageId,
+                    OperationType = FeeOperationType.CashInOut,
+                    Fee = fees.ToJson()
+                };
+                _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+            }
 
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(CashOutEvent message)
         {
-            var fee = message.CashOut.Fees?.FirstOrDefault()?.Transfer;
+            var fees = message.CashOut.Fees;
+            var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashOutProcessedEvent
             {
                 Id = Guid.Parse(message.Header.MessageId),
@@ -114,20 +119,24 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
 
-            var feeEvent = new FeeChargedEvent
+            if (fees != null)
             {
-                OperationId = message.Header.MessageId,
-                OperationType = FeeOperationType.CashInOut,
-                Fee = message.CashOut.Fees?.ToJson()
-            };
-            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                var feeEvent = new FeeChargedEvent
+                {
+                    OperationId = message.Header.MessageId,
+                    OperationType = FeeOperationType.CashInOut,
+                    Fee = fees.ToJson()
+                };
+                _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+            }
 
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(CashTransferEvent message)
         {
-            var fee = message.CashTransfer.Fees?.FirstOrDefault()?.Transfer;
+            var fees = message.CashTransfer.Fees;
+            var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashTransferProcessedEvent
             {
                 Id = Guid.Parse(message.Header.MessageId),
@@ -141,13 +150,16 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
 
-            var feeEvent = new FeeChargedEvent
+            if (fees != null)
             {
-                OperationId = message.Header.MessageId,
-                OperationType = FeeOperationType.Transfer,
-                Fee = message.CashTransfer.Fees?.ToJson()
-            };
-            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                var feeEvent = new FeeChargedEvent
+                {
+                    OperationId = message.Header.MessageId,
+                    OperationType = FeeOperationType.Transfer,
+                    Fee = fees.ToJson()
+                };
+                _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+            }
 
             return Task.CompletedTask;
         }
@@ -205,13 +217,16 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 var orderId = order.Id;
                 foreach (var trade in order.Trades)
                 {
-                    var feeEvent = new FeeChargedEvent
+                    if (trade.Fees != null)
                     {
-                        OperationId = orderId,
-                        OperationType = orderType,
-                        Fee = trade.Fees?.ToJson()
-                    };
-                    _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                        var feeEvent = new FeeChargedEvent
+                        {
+                            OperationId = orderId,
+                            OperationType = orderType,
+                            Fee = trade.Fees.ToJson()
+                        };
+                        _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                    }
                 }
             }
 
