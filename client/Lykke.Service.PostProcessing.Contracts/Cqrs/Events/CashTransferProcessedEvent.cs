@@ -10,7 +10,7 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
     public class CashTransferProcessedEvent
     {
         [ProtoMember(1, IsRequired = true)]
-        public Guid Id { get; set; }
+        public Guid OperationId { get; set; }
 
         [ProtoMember(2, IsRequired = true)]
         public Guid FromWalletId { get; set; }
@@ -32,5 +32,8 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
 
         [ProtoMember(8, IsRequired = false)]
         public decimal? FeeSize { get; set; }
+
+        [ProtoMember(7, IsRequired = true)]
+        public Guid RequestId { get; set; }
     }
 }

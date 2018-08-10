@@ -81,7 +81,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashInProcessedEvent
             {
-                Id = Guid.Parse(message.Header.MessageId),
+                OperationId = Guid.Parse(message.Header.RequestId),
+                RequestId = Guid.Parse(message.Header.MessageId),
                 WalletId = Guid.Parse(message.CashIn.WalletId),
                 Volume = decimal.Parse(message.CashIn.Volume),
                 AssetId = message.CashIn.AssetId,
@@ -110,7 +111,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashOutProcessedEvent
             {
-                Id = Guid.Parse(message.Header.MessageId),
+                OperationId = Guid.Parse(message.Header.RequestId),
+                RequestId = Guid.Parse(message.Header.MessageId),
                 WalletId = Guid.Parse(message.CashOut.WalletId),
                 Volume = decimal.Parse(message.CashOut.Volume),
                 AssetId = message.CashOut.AssetId,
@@ -139,7 +141,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashTransferProcessedEvent
             {
-                Id = Guid.Parse(message.Header.MessageId),
+                OperationId = Guid.Parse(message.Header.RequestId),
+                RequestId = Guid.Parse(message.Header.MessageId),
                 FromWalletId = Guid.Parse(message.CashTransfer.FromWalletId),
                 ToWalletId = Guid.Parse(message.CashTransfer.ToWalletId),
                 Volume = decimal.Parse(message.CashTransfer.Volume),
