@@ -48,5 +48,8 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Models
 
         [ProtoMember(13, IsRequired = false)]
         public string FeeAssetId { get; set; }
+
+        [ProtoMember(14, IsRequired = true)]
+        public Guid OppositeWalletId { get; set; }
     }
 }

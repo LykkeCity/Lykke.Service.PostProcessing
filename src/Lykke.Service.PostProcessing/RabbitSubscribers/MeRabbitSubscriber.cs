@@ -196,19 +196,20 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     UpperPrice = ParseNullabe(x.UpperPrice),
                     Trades = x.Trades?.Select(t => new TradeModel
                     {
-                        WalletId = Guid.Parse(x.WalletId),
-                        Volume = decimal.Parse(t.Volume),
                         Id = Guid.Parse(t.TradeId),
-                        AssetId = t.AssetId,
-                        Timestamp = t.Timestamp,
+                        WalletId = Guid.Parse(x.WalletId),
                         AssetPairId = x.AssetPairId,
+                        AssetId = t.AssetId,
+                        Volume = decimal.Parse(t.Volume),
                         Price = decimal.Parse(t.Price),
-                        FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
-                        FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
-                        Index = t.Index,
+                        Timestamp = t.Timestamp,
                         OppositeAssetId = t.OppositeAssetId,
                         OppositeVolume = decimal.Parse(t.OppositeVolume),
-                        Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role
+                        Index = t.Index,
+                        Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role,
+                        FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
+                        FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
+                        OppositeWalletId = Guid.Parse(t.OppositeWalletId),
                     })
                 }).ToList()
             };
