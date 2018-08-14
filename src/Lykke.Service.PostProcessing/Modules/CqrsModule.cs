@@ -79,7 +79,8 @@ namespace Lykke.Service.PostProcessing.Modules
                         typeof(CashInProcessedEvent),
                         typeof(CashOutProcessedEvent),
                         typeof(CashTransferProcessedEvent),
-                        typeof(ExecutionProcessedEvent))
+                        typeof(ExecutionProcessedEvent),
+                        typeof(ManualOrderTradeProcessedEvent))
                     .With(defaultRoute),
 
                 Register.DefaultRouting);

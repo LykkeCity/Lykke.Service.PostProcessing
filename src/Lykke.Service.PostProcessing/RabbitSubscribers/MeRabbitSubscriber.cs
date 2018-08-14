@@ -169,53 +169,63 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private Task ProcessMessageAsync(ExecutionEvent message)
         {
+            var orders = message.Orders.Select(x => new OrderModel
+            {
+                Id = Guid.Parse(x.ExternalId),
+                WalletId = Guid.Parse(x.WalletId),
+                Volume = decimal.Parse(x.Volume),
+                AssetPairId = x.AssetPairId,
+                CreateDt = x.CreatedAt,
+                LowerLimitPrice = ParseNullabe(x.LowerLimitPrice),
+                LowerPrice = ParseNullabe(x.LowerPrice),
+                MatchDt = x.LastMatchTime,
+                MatchingId = Guid.Parse(x.Id),
+                Price = ParseNullabe(x.Price),
+                RegisterDt = x.Registered,
+                RejectReason = x.RejectReason,
+                RemainingVolume = ParseNullabe(x.RemainingVolume),
+                Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
+                Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
+                StatusDt = x.StatusDate,
+                Straight = x.Straight ?? true,
+                Type = (Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
+                UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
+                UpperPrice = ParseNullabe(x.UpperPrice),
+                Trades = x.Trades?.Select(t => new TradeModel
+                {
+                    Id = Guid.Parse(t.TradeId),
+                    WalletId = Guid.Parse(x.WalletId),
+                    AssetPairId = x.AssetPairId,
+                    AssetId = t.AssetId,
+                    Volume = decimal.Parse(t.Volume),
+                    Price = decimal.Parse(t.Price),
+                    Timestamp = t.Timestamp,
+                    OppositeAssetId = t.OppositeAssetId,
+                    OppositeVolume = decimal.Parse(t.OppositeVolume),
+                    Index = t.Index,
+                    Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role,
+                    FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
+                    FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
+                    OppositeWalletId = Guid.Parse(t.OppositeWalletId),
+                })
+            }).ToList();
             var @event = new ExecutionProcessedEvent
             {
                 SequenceNumber = message.Header.SequenceNumber,
-                Orders = message.Orders.Select(x => new OrderModel
-                {
-                    Id = Guid.Parse(x.ExternalId),
-                    WalletId = Guid.Parse(x.WalletId),
-                    Volume = decimal.Parse(x.Volume),
-                    AssetPairId = x.AssetPairId,
-                    CreateDt = x.CreatedAt,
-                    LowerLimitPrice = ParseNullabe(x.LowerLimitPrice),
-                    LowerPrice = ParseNullabe(x.LowerPrice),
-                    MatchDt = x.LastMatchTime,
-                    MatchingId = Guid.Parse(x.Id),
-                    Price = ParseNullabe(x.Price),
-                    RegisterDt = x.Registered,
-                    RejectReason = x.RejectReason,
-                    RemainingVolume = ParseNullabe(x.RemainingVolume),
-                    Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
-                    Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
-                    StatusDt = x.StatusDate,
-                    Straight = x.Straight ?? true,
-                    Type = (Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
-                    UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
-                    UpperPrice = ParseNullabe(x.UpperPrice),
-                    Trades = x.Trades?.Select(t => new TradeModel
-                    {
-                        Id = Guid.Parse(t.TradeId),
-                        WalletId = Guid.Parse(x.WalletId),
-                        AssetPairId = x.AssetPairId,
-                        AssetId = t.AssetId,
-                        Volume = decimal.Parse(t.Volume),
-                        Price = decimal.Parse(t.Price),
-                        Timestamp = t.Timestamp,
-                        OppositeAssetId = t.OppositeAssetId,
-                        OppositeVolume = decimal.Parse(t.OppositeVolume),
-                        Index = t.Index,
-                        Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role,
-                        FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
-                        FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
-                        OppositeWalletId = Guid.Parse(t.OppositeWalletId),
-                    })
-                }).ToList()
+                Orders = orders
             };
             _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
 
-            foreach (var order in message.Orders.Where(x => x.Trades != null))
+            foreach (var order in orders.Where(x => x.Trades != null && x.Trades.Any()))
+            {
+                var tradeProcessedEvent = new ManualOrderTradeProcessedEvent
+                {
+                    Order = order
+                };
+                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+            }
+
+            foreach (var order in message.Orders.Where(x => x.Trades != null && x.Trades.Count > 0))
             {
                 var orderType = order.OrderType == OrderType.Market ? FeeOperationType.Trade : FeeOperationType.LimitTrade;
                 var orderId = order.Id;
