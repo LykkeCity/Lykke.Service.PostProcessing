@@ -4,10 +4,6 @@ PostProcessingService:
             settings-key: PostProcessingService-LogsConnString
             types:
                 - AzureTableStorage
-        DeduplicationConnectionString:
-            settings-key: DeduplicationMongoConnectionString
-            types:
-                - MongoDB
     MatchingEngineRabbit:
         ConnectionString:
             settings-key: MatchingEngineRabbitMqConnectionString
