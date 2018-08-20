@@ -18,7 +18,6 @@ namespace Lykke.Service.PostProcessing.Modules
         {
             builder.RegisterType<MeRabbitSubscriber>()
                 .As<IStartable>()
-                .AutoActivate()
                 .SingleInstance()
                 .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit));
 

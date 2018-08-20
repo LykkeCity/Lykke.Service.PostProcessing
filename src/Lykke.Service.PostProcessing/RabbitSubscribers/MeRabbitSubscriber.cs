@@ -26,6 +26,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly RabbitMqSettings _rabbitMqSettings;
         private readonly ICqrsEngine _cqrsEngine;
         private readonly List<IStopable> _subscribers = new List<IStopable>();
+        private readonly IDeduplicator _deduplicator;
 
         private const string QueueName = "lykke.spot.matching.engine.out.events.post-processing";
         private const bool QueueDurable = true;
@@ -33,11 +34,13 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         public MeRabbitSubscriber(
             [NotNull] ILogFactory logFactory,
             [NotNull] RabbitMqSettings rabbitMqSettings,
-            [NotNull] ICqrsEngine cqrsEngine)
+            [NotNull] ICqrsEngine cqrsEngine, 
+            [NotNull] IDeduplicator deduplicator)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
             _rabbitMqSettings = rabbitMqSettings ?? throw new ArgumentNullException(nameof(rabbitMqSettings));
             _cqrsEngine = cqrsEngine ?? throw new ArgumentNullException(nameof(cqrsEngine));
+            _deduplicator = deduplicator ?? throw new ArgumentNullException(nameof(deduplicator));
         }
 
         public void Start()
@@ -70,7 +73,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 .Subscribe(func)
                 .CreateDefaultBinding()
                 .SetAlternativeExchange(_rabbitMqSettings.AlternativeConnectionString)
-                .SetDeduplicator(new InMemoryDeduplcator(TimeSpan.FromDays(7)))
+                .SetDeduplicator(_deduplicator)
                 .Start();
         }
 
@@ -207,7 +210,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
                     FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
                     OppositeWalletId = Guid.Parse(t.OppositeWalletId),
-                })
+                }).ToList()
             }).ToList();
             var @event = new ExecutionProcessedEvent
             {

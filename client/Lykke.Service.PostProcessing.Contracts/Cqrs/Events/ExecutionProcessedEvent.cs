@@ -11,7 +11,7 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
     public class ExecutionProcessedEvent
     {
         [ProtoMember(1, IsRequired = true)]
-        public List<OrderModel> Orders { get; set; }
+        public IReadOnlyList<OrderModel> Orders { get; set; }
 
         [ProtoMember(2, IsRequired = true)]
         public long SequenceNumber { get; set; }

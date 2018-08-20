@@ -50,7 +50,7 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Models
         [ProtoMember(13, IsRequired = false)]
         public DateTime? MatchDt { get; set; }
 
-        [ProtoMember(14, IsRequired = true)]
+        [ProtoMember(14, IsRequired = false)]
         public decimal? RemainingVolume { get; set; }
 
         [ProtoMember(15, IsRequired = true)]
@@ -72,6 +72,6 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Models
         public bool Straight { get; set; } = true;
 
         [ProtoMember(21, IsRequired = false)]
-        public IEnumerable<TradeModel> Trades { get; set; } = new List<TradeModel>();
+        public IReadOnlyCollection<TradeModel> Trades { get; set; } = new List<TradeModel>();
     }
 }

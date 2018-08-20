@@ -25,6 +25,7 @@
     <PackageReference Include="Lykke.Cqrs" Version="5.0.1" />
     <PackageReference Include="Lykke.MatchingEngineConnector" Version="8.0.2-beta" />
     <PackageReference Include="Lykke.Messaging.RabbitMq" Version="2.1.0" />
+    <PackageReference Include="Lykke.RabbitMq.Mongo" Version="1.0.1" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="7.3.0" />
     <PackageReference Include="Lykke.Sdk" Version="5.2.2" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.1.2" />

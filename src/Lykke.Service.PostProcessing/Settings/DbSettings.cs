@@ -6,5 +6,7 @@ namespace Lykke.Service.PostProcessing.Settings
     {
         [AzureTableCheck]
         public string LogsConnString { get; set; }
+
+        public string DeduplicationConnectionString { get; set; }
     }
 }
