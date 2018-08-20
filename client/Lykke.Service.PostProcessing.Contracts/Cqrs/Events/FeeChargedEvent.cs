@@ -3,6 +3,9 @@ using ProtoBuf;
 
 namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
 {
+    /// <summary>
+    /// Fee charged event.
+    /// </summary>
     [ProtoContract]
     public class FeeChargedEvent
     {

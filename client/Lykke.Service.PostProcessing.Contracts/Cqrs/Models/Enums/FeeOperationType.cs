@@ -2,7 +2,7 @@
 {
     public enum FeeOperationType
     {
-        CashInOut = 0,
+        CashInOut,
         Trade,
         Transfer,
         LimitTrade
