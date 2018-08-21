@@ -1,0 +1,39 @@
+PostProcessingService:
+    Db: 
+        LogsConnString:
+            settings-key: PostProcessingService-LogsConnString
+            types:
+                - AzureTableStorage
+        DeduplicationConnectionString:
+            settings-key: DeduplicationMongoConnectionString
+            types:
+                - MongoDB
+    MatchingEngineRabbit:
+        ConnectionString:
+            settings-key: MatchingEngineRabbitMqConnectionString
+            types:
+                - RabbitMq
+        AlternativeConnectionString:
+            settings-key: AlternateMatchingEngineRabbitMqConnectionString
+            types:
+                - RabbitMq
+                - Optional
+        Exchange:
+            settings-key: MatchingEngineSpotEventsExchange
+    Cqrs:
+        RabbitConnString:
+            settings-key: CqrsRabbitConnString
+            types:
+                - RabbitMq
+MonitoringServiceClient:
+    MonitoringServiceUrl:
+        settings-key: MonitoringServiceUrl
+SlackNotifications:
+    AzureQueue:
+        ConnectionString:
+            settings-key: SlackNotificationsConnString
+            types:
+                - AzureTableStorage
+        QueueName:
+            settings-key: SlackQueueName
+   
