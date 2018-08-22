@@ -2,6 +2,9 @@
 using Lykke.Service.PostProcessing.RabbitSubscribers;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 
 namespace Lykke.Service.PostProcessing.Modules
 {
@@ -21,6 +24,13 @@ namespace Lykke.Service.PostProcessing.Modules
                 .SingleInstance()
                 .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit));
 
+            JsonConvert.DefaultSettings = (() =>
+            {
+                var settings = new JsonSerializerSettings();
+                settings.Converters.Add(new StringEnumConverter());
+                settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
+                return settings;
+            });
         }
     }
 }
