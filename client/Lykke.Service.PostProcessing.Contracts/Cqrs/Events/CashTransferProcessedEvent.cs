@@ -33,7 +33,7 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
         [ProtoMember(8, IsRequired = false)]
         public decimal? FeeSize { get; set; }
 
-        [ProtoMember(7, IsRequired = true)]
+        [ProtoMember(9, IsRequired = true)]
         public Guid RequestId { get; set; }
     }
 }
