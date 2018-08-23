@@ -100,7 +100,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 {
                     OperationId = message.Header.MessageId,
                     OperationType = FeeOperationType.CashInOut,
-                    Fee = fees.Select(x => x.Transfer).ToJson()
+                    Fee = fees.Where(x => x.Transfer != null).Select(x => x.Transfer).ToJson()
                 };
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
@@ -130,7 +130,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 {
                     OperationId = message.Header.MessageId,
                     OperationType = FeeOperationType.CashInOut,
-                    Fee = fees.Select(x => x.Transfer).ToJson()
+                    Fee = fees.Where(x => x.Transfer != null).Select(x => x.Transfer).ToJson()
                 };
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
@@ -162,7 +162,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 {
                     OperationId = message.Header.MessageId,
                     OperationType = FeeOperationType.Transfer,
-                    Fee = fees.Select(x => x.Transfer).ToJson()
+                    Fee = fees.Where(x => x.Transfer != null).Select(x => x.Transfer).ToJson()
                 };
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
