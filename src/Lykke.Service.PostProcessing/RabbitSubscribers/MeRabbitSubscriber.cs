@@ -252,7 +252,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             {
                 var tradeProcessedEvent = new OrderCancelledEvent
                 {
-                    Id = order.Id,
+                    OrderId = order.Id,
                     Status = order.Status,
                     AssetPairId = order.AssetPairId,
                     Price = order.Price,
@@ -267,7 +267,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             {
                 var tradeProcessedEvent = new OrderPlacedEvent
                 {
-                    Id = order.Id,
+                    OrderId = order.Id,
                     Status = order.Status,
                     AssetPairId = order.AssetPairId,
                     Price = order.Price,

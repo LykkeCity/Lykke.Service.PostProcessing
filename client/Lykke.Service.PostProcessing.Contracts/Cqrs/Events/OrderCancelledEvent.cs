@@ -11,7 +11,7 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
     public class OrderCancelledEvent
     {
         [ProtoMember(1, IsRequired = true)]
-        public Guid Id { get; set; }
+        public Guid OrderId { get; set; }
 
         [ProtoMember(2, IsRequired = true)]
         public Guid WalletId { get; set; }
