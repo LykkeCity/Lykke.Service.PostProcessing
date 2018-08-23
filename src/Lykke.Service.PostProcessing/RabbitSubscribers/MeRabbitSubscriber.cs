@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 
 namespace Lykke.Service.PostProcessing.RabbitSubscribers
@@ -245,6 +246,36 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                         _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
                     }
                 }
+            }
+
+            foreach (var order in orders.Where(x => x.Status == OrderStatus.Cancelled))
+            {
+                var tradeProcessedEvent = new OrderCancelledEvent
+                {
+                    Id = order.Id,
+                    Status = order.Status,
+                    AssetPairId = order.AssetPairId,
+                    Price = order.Price,
+                    Timestamp = order.StatusDt,
+                    Volume = order.Volume,
+                    WalletId = order.WalletId
+                };
+                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+            }
+
+            foreach (var order in orders.Where(x => x.Status == OrderStatus.Placed))
+            {
+                var tradeProcessedEvent = new OrderPlacedEvent
+                {
+                    Id = order.Id,
+                    Status = order.Status,
+                    AssetPairId = order.AssetPairId,
+                    Price = order.Price,
+                    Timestamp = order.StatusDt,
+                    Volume = order.Volume,
+                    WalletId = order.WalletId
+                };
+                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
             }
 
             return Task.CompletedTask;
