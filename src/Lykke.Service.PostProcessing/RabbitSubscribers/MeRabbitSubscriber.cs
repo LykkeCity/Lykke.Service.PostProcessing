@@ -249,7 +249,9 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 }
             }
 
-            foreach (var order in orders.Where(x => x.Status == OrderStatus.Cancelled))
+            var limitOrders = orders.Where(x => x.Type == Contracts.Cqrs.Models.Enums.OrderType.Limit ||
+                                                x.Type == Contracts.Cqrs.Models.Enums.OrderType.StopLimit).ToList();
+            foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Cancelled))
             {
                 var tradeProcessedEvent = new OrderCancelledEvent
                 {
@@ -264,7 +266,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
             }
 
-            foreach (var order in orders.Where(x => x.Status == OrderStatus.Placed))
+            foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Placed))
             {
                 var tradeProcessedEvent = new OrderPlacedEvent
                 {
@@ -280,7 +282,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
             }
 
-            foreach (var order in orders.Where(x =>
+            foreach (var order in limitOrders.Where(x =>
                 (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched) 
                 && x.Trades.Any(t => t.Role == TradeRole.Taker)))
             {
