@@ -253,7 +253,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                                                 x.Type == Contracts.Cqrs.Models.Enums.OrderType.StopLimit).ToList();
             foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Cancelled))
             {
-                var tradeProcessedEvent = new OrderCancelledEvent
+                var orderCancelledEvent = new OrderCancelledEvent
                 {
                     OrderId = order.Id,
                     Status = order.Status,
@@ -263,12 +263,12 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     Volume = order.Volume,
                     WalletId = order.WalletId
                 };
-                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+                _cqrsEngine.PublishEvent(orderCancelledEvent, BoundedContext.Name);
             }
 
             foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Placed))
             {
-                var tradeProcessedEvent = new OrderPlacedEvent
+                var orderPlacedEvent = new OrderPlacedEvent
                 {
                     OrderId = order.Id,
                     Status = order.Status,
@@ -279,14 +279,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     WalletId = order.WalletId,
                     CreateDt = order.CreateDt
                 };
-                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+                _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
             }
 
             foreach (var order in limitOrders.Where(x =>
                 (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched) 
                 && x.Trades.Any(t => t.Role == TradeRole.Taker)))
             {
-                var tradeProcessedEvent = new OrderPlacedEvent
+                var orderPlacedEvent = new OrderPlacedEvent
                 {
                     OrderId = order.Id,
                     Status = order.Status,
@@ -297,7 +297,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     WalletId = order.WalletId,
                     CreateDt = order.CreateDt
                 };
-                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+                _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
             }
 
             return Task.CompletedTask;
