@@ -17,6 +17,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
+using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
 
 namespace Lykke.Service.PostProcessing.RabbitSubscribers
 {
@@ -273,7 +274,26 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     Price = order.Price,
                     Timestamp = order.StatusDt,
                     Volume = order.Volume,
-                    WalletId = order.WalletId
+                    WalletId = order.WalletId,
+                    CreateDt = order.CreateDt
+                };
+                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+            }
+
+            foreach (var order in orders.Where(x =>
+                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched) 
+                && x.Trades.Any(t => t.Role == TradeRole.Taker)))
+            {
+                var tradeProcessedEvent = new OrderPlacedEvent
+                {
+                    OrderId = order.Id,
+                    Status = order.Status,
+                    AssetPairId = order.AssetPairId,
+                    Price = order.Price,
+                    Timestamp = order.StatusDt,
+                    Volume = order.Volume,
+                    WalletId = order.WalletId,
+                    CreateDt = order.CreateDt
                 };
                 _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
             }

@@ -30,5 +30,9 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Events
 
         [ProtoMember(7, IsRequired = true)]
         public DateTime Timestamp { get; set; }
+
+        [ProtoMember(8, IsRequired = true)]
+        public DateTime CreateDt { get; set; }
+
     }
 }
