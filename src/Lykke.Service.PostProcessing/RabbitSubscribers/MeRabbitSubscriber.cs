@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Autofac;
+﻿using Autofac;
 using Common;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
@@ -15,6 +11,10 @@ using Lykke.Service.PostProcessing.Contracts.Cqrs.Events;
 using Lykke.Service.PostProcessing.Contracts.Cqrs.Models;
 using Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums;
 using Lykke.Service.PostProcessing.Settings;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 
 namespace Lykke.Service.PostProcessing.RabbitSubscribers
@@ -34,7 +34,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         public MeRabbitSubscriber(
             [NotNull] ILogFactory logFactory,
             [NotNull] RabbitMqSettings rabbitMqSettings,
-            [NotNull] ICqrsEngine cqrsEngine, 
+            [NotNull] ICqrsEngine cqrsEngine,
             [NotNull] IDeduplicator deduplicator)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
@@ -100,7 +100,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 {
                     OperationId = message.Header.MessageId,
                     OperationType = FeeOperationType.CashInOut,
-                    Fee = fees.ToJson()
+                    Fee = fees.Where(x => x.Transfer != null).Select(x => x.Transfer).ToJson()
                 };
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
@@ -130,7 +130,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 {
                     OperationId = message.Header.MessageId,
                     OperationType = FeeOperationType.CashInOut,
-                    Fee = fees.ToJson()
+                    Fee = fees.Where(x => x.Transfer != null).Select(x => x.Transfer).ToJson()
                 };
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
@@ -162,7 +162,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 {
                     OperationId = message.Header.MessageId,
                     OperationType = FeeOperationType.Transfer,
-                    Fee = fees.ToJson()
+                    Fee = fees.Where(x => x.Transfer != null).Select(x => x.Transfer).ToJson()
                 };
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
