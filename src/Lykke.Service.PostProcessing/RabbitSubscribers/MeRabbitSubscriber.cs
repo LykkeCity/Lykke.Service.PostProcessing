@@ -15,7 +15,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
+using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
 
 namespace Lykke.Service.PostProcessing.RabbitSubscribers
 {
@@ -245,6 +247,57 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                         _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
                     }
                 }
+            }
+
+            var limitOrders = orders.Where(x => x.Type == Contracts.Cqrs.Models.Enums.OrderType.Limit ||
+                                                x.Type == Contracts.Cqrs.Models.Enums.OrderType.StopLimit).ToList();
+            foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Cancelled))
+            {
+                var orderCancelledEvent = new OrderCancelledEvent
+                {
+                    OrderId = order.Id,
+                    Status = order.Status,
+                    AssetPairId = order.AssetPairId,
+                    Price = order.Price,
+                    Timestamp = order.StatusDt,
+                    Volume = order.Volume,
+                    WalletId = order.WalletId
+                };
+                _cqrsEngine.PublishEvent(orderCancelledEvent, BoundedContext.Name);
+            }
+
+            foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Placed))
+            {
+                var orderPlacedEvent = new OrderPlacedEvent
+                {
+                    OrderId = order.Id,
+                    Status = order.Status,
+                    AssetPairId = order.AssetPairId,
+                    Price = order.Price,
+                    Timestamp = order.StatusDt,
+                    Volume = order.Volume,
+                    WalletId = order.WalletId,
+                    CreateDt = order.CreateDt
+                };
+                _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
+            }
+
+            foreach (var order in limitOrders.Where(x =>
+                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched) 
+                && x.Trades.Any(t => t.Role == TradeRole.Taker)))
+            {
+                var orderPlacedEvent = new OrderPlacedEvent
+                {
+                    OrderId = order.Id,
+                    Status = order.Status,
+                    AssetPairId = order.AssetPairId,
+                    Price = order.Price,
+                    Timestamp = order.StatusDt,
+                    Volume = order.Volume,
+                    WalletId = order.WalletId,
+                    CreateDt = order.CreateDt
+                };
+                _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
             }
 
             return Task.CompletedTask;
