@@ -20,10 +20,10 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Models
         public string AssetPairId { get; set; }
 
         [ProtoMember(4, IsRequired = true)]
-        public string AssetId { get; set; }
+        public string BaseAssetId { get; set; }
 
         [ProtoMember(5, IsRequired = true)]
-        public decimal Volume { get; set; }
+        public decimal BaseVolume { get; set; }
 
         [ProtoMember(6, IsRequired = true)]
         public decimal Price { get; set; }
@@ -32,10 +32,10 @@ namespace Lykke.Service.PostProcessing.Contracts.Cqrs.Models
         public DateTime Timestamp { get; set; }
 
         [ProtoMember(8, IsRequired = true)]
-        public string OppositeAssetId { get; set; }
+        public string QuotingAssetId { get; set; }
 
         [ProtoMember(9, IsRequired = true)]
-        public decimal OppositeVolume { get; set; }
+        public decimal QuotingVolume { get; set; }
 
         [ProtoMember(10, IsRequired = true)]
         public int Index { get; set; }
