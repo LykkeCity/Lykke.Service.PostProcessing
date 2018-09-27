@@ -192,7 +192,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
                 Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
                 StatusDt = x.StatusDate,
-                Straight = x.Straight,
+                Straight = x.OrderType == OrderType.Limit || x.OrderType == OrderType.StopLimit || x.Straight,
                 Type = (Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
                 UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
                 UpperPrice = ParseNullabe(x.UpperPrice),
