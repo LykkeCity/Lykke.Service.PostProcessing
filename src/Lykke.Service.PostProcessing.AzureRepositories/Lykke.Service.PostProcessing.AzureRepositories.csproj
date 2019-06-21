@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName>Lykke.Service.PostProcessing.AzureRepositories</AssemblyName>
     <RootNamespace>Lykke.Service.PostProcessing.AzureRepositories</RootNamespace>
     <Version>1.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Lykke.AzureStorage" Version="8.10.0" />
+    <PackageReference Include="Lykke.AzureStorage" Version="8.13.4" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Lykke.Service.PostProcessing.Core\Lykke.Service.PostProcessing.Core.csproj" />
