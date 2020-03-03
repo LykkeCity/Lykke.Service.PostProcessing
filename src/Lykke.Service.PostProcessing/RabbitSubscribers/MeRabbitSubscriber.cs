@@ -175,7 +175,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private Task ProcessMessageAsync(ExecutionEvent message)
         {
-            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(ExecutionEvent)} message", message.Header.RequestId);
+            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(ExecutionEvent)} message", parentId: message.Header.RequestId);
 
             var orders = message.Orders.Select(x => new OrderModel
             {
