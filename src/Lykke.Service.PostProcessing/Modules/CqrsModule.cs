@@ -8,6 +8,7 @@ using Lykke.Service.PostProcessing.Contracts.Cqrs.Events;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
 using System.Collections.Generic;
+using Lykke.Cqrs.Middleware.Logging;
 
 namespace Lykke.Service.PostProcessing.Modules
 {
@@ -51,9 +52,10 @@ namespace Lykke.Service.PostProcessing.Modules
             builder.Register(ctx =>
             {
                 const string defaultRoute = "self";
+                var logFactory = ctx.Resolve<ILogFactory>();
 
-                return new CqrsEngine(
-                    ctx.Resolve<ILogFactory>(),
+                var engine = new CqrsEngine(
+                    logFactory,
                     ctx.Resolve<IDependencyResolver>(),
                     ctx.Resolve<MessagingEngine>(),
                     new DefaultEndpointProvider(),
@@ -62,6 +64,9 @@ namespace Lykke.Service.PostProcessing.Modules
                         "RabbitMq",
                         Messaging.Serialization.SerializationFormat.ProtoBuf,
                         environment: "lykke")),
+
+                    Register.CommandInterceptors(new DefaultCommandLoggingInterceptor(logFactory)),
+                    Register.EventInterceptors(new DefaultEventLoggingInterceptor(logFactory)),
 
                     Register.BoundedContext(BoundedContext.Name)
                         .PublishingEvents(
@@ -76,8 +81,12 @@ namespace Lykke.Service.PostProcessing.Modules
                         .With(defaultRoute),
 
                     Register.DefaultRouting);
+
+                engine.StartPublishers();
+                return engine;
             })
                 .As<ICqrsEngine>()
+                .AutoActivate()
                 .SingleInstance();
         }
     }
