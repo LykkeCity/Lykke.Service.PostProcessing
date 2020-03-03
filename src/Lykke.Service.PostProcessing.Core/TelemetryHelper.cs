@@ -12,13 +12,17 @@ namespace Lykke.Service.PostProcessing.Core
 
         public static IOperationHolder<RequestTelemetry> InitTelemetryOperation(
             string name,
-            string id,
+            string id = null,
             string parentId = null)
         {
 
-            var requestTelemetry = new RequestTelemetry { Id = id, Name = name };
+            var requestTelemetry = new RequestTelemetry { Name = name };
 
-            requestTelemetry.Context.Operation.Id = id;
+            if (!string.IsNullOrEmpty(id))
+            {
+                requestTelemetry.Id = id;
+                requestTelemetry.Context.Operation.Id = id;
+            }
 
             if (!string.IsNullOrEmpty(parentId))
             {
