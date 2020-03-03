@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Lykke.Service.PostProcessing.Core;
 using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
@@ -174,6 +175,9 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private Task ProcessMessageAsync(ExecutionEvent message)
         {
+            string id = Guid.Parse(message.Header.RequestId).ToString("N");
+            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(ExecutionEvent)} message", id, id);
+
             var orders = message.Orders.Select(x => new OrderModel
             {
                 Id = Guid.Parse(x.ExternalId),
@@ -283,7 +287,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             }
 
             foreach (var order in limitOrders.Where(x =>
-                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched) 
+                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched)
                 && x.Trades.Any(t => t.Role == TradeRole.Taker)))
             {
                 var orderPlacedEvent = new OrderPlacedEvent
@@ -299,6 +303,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 };
                 _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
             }
+
+            TelemetryHelper.SubmitOperationResult(operation);
 
             return Task.CompletedTask;
         }
