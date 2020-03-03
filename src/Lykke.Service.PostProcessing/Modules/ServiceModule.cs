@@ -1,5 +1,7 @@
 ﻿using Autofac;
+using Lykke.Sdk;
 using Lykke.Service.PostProcessing.RabbitSubscribers;
+using Lykke.Service.PostProcessing.Services;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
 using Newtonsoft.Json;
@@ -19,6 +21,10 @@ namespace Lykke.Service.PostProcessing.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
+            builder.RegisterType<StartupManager>()
+                .As<IStartupManager>()
+                .SingleInstance();
+
             builder.RegisterType<MeRabbitSubscriber>()
                 .As<IStartable>()
                 .SingleInstance()
