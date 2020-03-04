@@ -1,5 +1,4 @@
 using System;
-using Common;
 using Microsoft.ApplicationInsights;
 using Microsoft.ApplicationInsights.DataContracts;
 using Microsoft.ApplicationInsights.Extensibility;
@@ -12,35 +11,16 @@ namespace Lykke.Service.PostProcessing.Core
 
         public static IOperationHolder<RequestTelemetry> InitTelemetryOperation(
             string name,
-            string id = null,
-            string parentId = null)
+            string id)
         {
 
+            string operationId = Guid.Parse(id).ToString("N");
             var requestTelemetry = new RequestTelemetry { Name = name };
 
-            if (!string.IsNullOrEmpty(id))
-            {
-                requestTelemetry.Id = id;
-                requestTelemetry.Context.Operation.Id = id;
-            }
+            requestTelemetry.Id = operationId;
+            requestTelemetry.Context.Operation.Id = operationId;
 
-            if (!string.IsNullOrEmpty(parentId))
-            {
-                requestTelemetry.Context.Operation.ParentId = parentId;
-            }
-
-            var operation = Telemetry.StartOperation(requestTelemetry);
-
-            var json = new
-            {
-                operationId = operation.Telemetry.Context.Operation.Id,
-                parentId = operation.Telemetry.Context.Operation.ParentId,
-                name = operation.Telemetry.Name
-            }.ToJson();
-
-            Console.WriteLine($"sending request telemetry: {json}");
-
-            return operation;
+            return Telemetry.StartOperation(requestTelemetry);
         }
 
         public static void SubmitException(IOperationHolder<RequestTelemetry> telemtryOperation, Exception e)

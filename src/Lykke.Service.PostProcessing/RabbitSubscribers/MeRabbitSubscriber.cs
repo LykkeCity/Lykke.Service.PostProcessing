@@ -83,6 +83,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private Task ProcessMessageAsync(CashInEvent message)
         {
+            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(CashInEvent)} message", message.Header.RequestId);
             var fees = message.CashIn.Fees;
             var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashInProcessedEvent
@@ -108,11 +109,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
 
+            TelemetryHelper.SubmitOperationResult(operation);
+
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(CashOutEvent message)
         {
+            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(CashOutEvent)} message", message.Header.RequestId);
             var fees = message.CashOut.Fees;
             var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashOutProcessedEvent
@@ -138,11 +142,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
 
+            TelemetryHelper.SubmitOperationResult(operation);
+
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(CashTransferEvent message)
         {
+            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(CashTransferEvent)} message", message.Header.RequestId);
             var fees = message.CashTransfer.Fees;
             var fee = fees?.FirstOrDefault()?.Transfer;
             var @event = new CashTransferProcessedEvent
@@ -170,13 +177,14 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
 
+            TelemetryHelper.SubmitOperationResult(operation);
+
             return Task.CompletedTask;
         }
 
         private Task ProcessMessageAsync(ExecutionEvent message)
         {
-            string id = Guid.Parse(message.Header.RequestId).ToString("N");
-            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(ExecutionEvent)} message", id, id);
+            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(ExecutionEvent)} message", message.Header.RequestId);
 
             var orders = message.Orders.Select(x => new OrderModel
             {
