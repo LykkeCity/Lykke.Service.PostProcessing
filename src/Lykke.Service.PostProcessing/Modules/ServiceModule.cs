@@ -28,7 +28,8 @@ namespace Lykke.Service.PostProcessing.Modules
             builder.RegisterType<MeRabbitSubscriber>()
                 .As<IStartable>()
                 .SingleInstance()
-                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit));
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit))
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.WalletIdsToLog));
 
             JsonConvert.DefaultSettings = (() =>
             {
