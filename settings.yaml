@@ -1,5 +1,5 @@
 PostProcessingService:
-    Db: 
+    Db:
         LogsConnString:
             settings-key: PostProcessingService-LogsConnString
             types:
@@ -25,6 +25,9 @@ PostProcessingService:
             settings-key: CqrsRabbitConnString
             types:
                 - RabbitMq
+    WalletIdsToLog:
+        settings-key: PostProcessingService-WalletIdsToLog
+        types: [ Optional, JsonArray ]
 MonitoringServiceClient:
     MonitoringServiceUrl:
         settings-key: MonitoringServiceUrl
@@ -36,4 +39,3 @@ SlackNotifications:
                 - AzureTableStorage
         QueueName:
             settings-key: SlackQueueName
-   

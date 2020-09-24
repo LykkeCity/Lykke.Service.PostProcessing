@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
@@ -8,6 +9,7 @@ using Lykke.Service.PostProcessing.Contracts.Cqrs.Events;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
 using System.Collections.Generic;
+using Lykke.Cqrs.Middleware.Logging;
 
 namespace Lykke.Service.PostProcessing.Modules
 {
@@ -26,7 +28,7 @@ namespace Lykke.Service.PostProcessing.Modules
 
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
-                Uri = _settings.RabbitConnString
+                Uri = new Uri(_settings.RabbitConnString)
             };
             var rabbitMqEndpoint = rabbitMqSettings.Endpoint.ToString();
 
@@ -52,7 +54,7 @@ namespace Lykke.Service.PostProcessing.Modules
             {
                 const string defaultRoute = "self";
 
-                return new CqrsEngine(
+                var cqrsEngine = new CqrsEngine(
                     ctx.Resolve<ILogFactory>(),
                     ctx.Resolve<IDependencyResolver>(),
                     ctx.Resolve<MessagingEngine>(),
@@ -62,6 +64,9 @@ namespace Lykke.Service.PostProcessing.Modules
                         "RabbitMq",
                         Messaging.Serialization.SerializationFormat.ProtoBuf,
                         environment: "lykke")),
+
+                    Register.CommandInterceptors(new DefaultCommandLoggingInterceptor(logFactory)),
+                    Register.EventInterceptors(new DefaultEventLoggingInterceptor(logFactory)),
 
                     Register.BoundedContext(BoundedContext.Name)
                         .PublishingEvents(
@@ -76,8 +81,12 @@ namespace Lykke.Service.PostProcessing.Modules
                         .With(defaultRoute),
 
                     Register.DefaultRouting);
+
+                cqrsEngine.StartPublishers();
+                return cqrsEngine;
             })
                 .As<ICqrsEngine>()
+                .AutoActivate()
                 .SingleInstance();
         }
     }

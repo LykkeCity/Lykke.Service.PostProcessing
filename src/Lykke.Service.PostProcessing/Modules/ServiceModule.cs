@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Lykke.Sdk;
 using Lykke.Service.PostProcessing.RabbitSubscribers;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
@@ -31,6 +32,8 @@ namespace Lykke.Service.PostProcessing.Modules
                 settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                 return settings;
             });
+
+            builder.RegisterType<StartupManager>().As<IStartupManager>();
         }
     }
 }
