@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System;
+using Autofac;
 using Lykke.Common.Log;
 using Lykke.Cqrs;
 using Lykke.Cqrs.Configuration;
@@ -27,7 +28,7 @@ namespace Lykke.Service.PostProcessing.Modules
 
             var rabbitMqSettings = new RabbitMQ.Client.ConnectionFactory
             {
-                Uri = _settings.RabbitConnString
+                Uri = new Uri(_settings.RabbitConnString)
             };
             var rabbitMqEndpoint = rabbitMqSettings.Endpoint.ToString();
 
@@ -54,7 +55,7 @@ namespace Lykke.Service.PostProcessing.Modules
                 const string defaultRoute = "self";
                 var logFactory = ctx.Resolve<ILogFactory>();
 
-                var engine = new CqrsEngine(
+                var cqrsEngine = new CqrsEngine(
                     logFactory,
                     ctx.Resolve<IDependencyResolver>(),
                     ctx.Resolve<MessagingEngine>(),
@@ -82,8 +83,8 @@ namespace Lykke.Service.PostProcessing.Modules
 
                     Register.DefaultRouting);
 
-                engine.StartPublishers();
-                return engine;
+                cqrsEngine.StartPublishers();
+                return cqrsEngine;
             })
                 .As<ICqrsEngine>()
                 .AutoActivate()

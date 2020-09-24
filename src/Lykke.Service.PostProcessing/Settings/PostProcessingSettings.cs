@@ -1,4 +1,7 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.Collections.Generic;
+using JetBrains.Annotations;
+using Lykke.SettingsReader.Attributes;
 
 namespace Lykke.Service.PostProcessing.Settings
 {
@@ -10,5 +13,8 @@ namespace Lykke.Service.PostProcessing.Settings
         public RabbitMqSettings MatchingEngineRabbit { get; set; }
 
         public CqrsSettings Cqrs { get; set; }
+
+        [Optional]
+        public IReadOnlyList<string> WalletIdsToLog { get; set; } = Array.Empty<string>();
     }
 }
