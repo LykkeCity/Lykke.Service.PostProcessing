@@ -27,7 +27,7 @@
     <PackageReference Include="Lykke.Messaging.RabbitMq" Version="2.2.2" />
     <PackageReference Include="Lykke.RabbitMq.Mongo" Version="1.0.2" />
     <PackageReference Include="Lykke.RabbitMqBroker" Version="7.13.3" />
-    <PackageReference Include="Lykke.Sdk" Version="5.17.0" />
+    <PackageReference Include="Lykke.Sdk" Version="5.18.0" />
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
     <PackageReference Include="protobuf-net" Version="2.3.15" />
