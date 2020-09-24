@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Lykke.Service.PostProcessing.Core;
+using Common.Log;
 using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
@@ -31,6 +32,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly List<IStopable> _subscribers = new List<IStopable>();
         private readonly IDeduplicator _deduplicator;
         private readonly IReadOnlyList<string> _walletIds;
+        private readonly ILog _log;
 
         private const string QueueName = "lykke.spot.matching.engine.out.events.post-processing";
         private const bool QueueDurable = true;
@@ -43,6 +45,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             IReadOnlyList<string> walletIds)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+            _log = _logFactory.CreateLog(this);
             _rabbitMqSettings = rabbitMqSettings ?? throw new ArgumentNullException(nameof(rabbitMqSettings));
             _cqrsEngine = cqrsEngine ?? throw new ArgumentNullException(nameof(cqrsEngine));
             _deduplicator = deduplicator ?? throw new ArgumentNullException(nameof(deduplicator));
@@ -229,6 +232,12 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     OppositeWalletId = Guid.Parse(t.OppositeWalletId),
                 }).ToList()
             }).ToList();
+
+            foreach (var order in orders.Where(x => _walletIds.Contains(x.WalletId.ToString())))
+            {
+                _log.Info("Order from ME", new {order.Id, order.Status, message.Header.SequenceNumber}.ToJson());
+            }
+
             var @event = new ExecutionProcessedEvent
             {
                 SequenceNumber = message.Header.SequenceNumber,

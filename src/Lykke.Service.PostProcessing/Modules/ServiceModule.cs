@@ -37,8 +37,6 @@ namespace Lykke.Service.PostProcessing.Modules
                 settings.ContractResolver = new CamelCasePropertyNamesContractResolver();
                 return settings;
             });
-
-            builder.RegisterType<StartupManager>().As<IStartupManager>();
         }
     }
 }

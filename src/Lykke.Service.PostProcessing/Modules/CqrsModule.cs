@@ -53,6 +53,7 @@ namespace Lykke.Service.PostProcessing.Modules
             builder.Register(ctx =>
             {
                 const string defaultRoute = "self";
+
                 var logFactory = ctx.Resolve<ILogFactory>();
 
                 var cqrsEngine = new CqrsEngine(
