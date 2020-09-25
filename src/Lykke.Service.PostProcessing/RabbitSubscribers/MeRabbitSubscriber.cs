@@ -235,7 +235,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
             foreach (var order in orders.Where(x => _walletIds.Contains(x.WalletId.ToString())))
             {
-                _log.Info("Order from ME", new {order.Id, order.Status, message.Header.SequenceNumber}.ToJson());
+                _log.Info("Order from ME", $"order: {new {order.Id, order.Status, message.Header.SequenceNumber}.ToJson()}");
             }
 
             var @event = new ExecutionProcessedEvent
