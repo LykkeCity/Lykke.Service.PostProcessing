@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Lykke.Sdk;
 using Lykke.Service.PostProcessing.RabbitSubscribers;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
@@ -19,10 +20,15 @@ namespace Lykke.Service.PostProcessing.Modules
 
         protected override void Load(ContainerBuilder builder)
         {
+            builder.RegisterType<StartupManager>()
+                .As<IStartupManager>()
+                .SingleInstance();
+
             builder.RegisterType<MeRabbitSubscriber>()
                 .As<IStartable>()
                 .SingleInstance()
-                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit));
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit))
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.WalletIdsToLog));
 
             JsonConvert.DefaultSettings = (() =>
             {

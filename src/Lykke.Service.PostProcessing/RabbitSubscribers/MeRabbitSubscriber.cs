@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Common.Log;
 using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
@@ -29,6 +30,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly ICqrsEngine _cqrsEngine;
         private readonly List<IStopable> _subscribers = new List<IStopable>();
         private readonly IDeduplicator _deduplicator;
+        private readonly IReadOnlyList<string> _walletIds;
+        private readonly ILog _log;
 
         private const string QueueName = "lykke.spot.matching.engine.out.events.post-processing";
         private const bool QueueDurable = true;
@@ -37,12 +40,15 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             [NotNull] ILogFactory logFactory,
             [NotNull] RabbitMqSettings rabbitMqSettings,
             [NotNull] ICqrsEngine cqrsEngine,
-            [NotNull] IDeduplicator deduplicator)
+            [NotNull] IDeduplicator deduplicator,
+            IReadOnlyList<string> walletIds)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
+            _log = _logFactory.CreateLog(this);
             _rabbitMqSettings = rabbitMqSettings ?? throw new ArgumentNullException(nameof(rabbitMqSettings));
             _cqrsEngine = cqrsEngine ?? throw new ArgumentNullException(nameof(cqrsEngine));
             _deduplicator = deduplicator ?? throw new ArgumentNullException(nameof(deduplicator));
+            _walletIds = walletIds;
         }
 
         public void Start()
@@ -214,6 +220,12 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                     OppositeWalletId = Guid.Parse(t.OppositeWalletId),
                 }).ToList()
             }).ToList();
+
+            foreach (var order in orders.Where(x => _walletIds.Contains(x.WalletId.ToString())))
+            {
+                _log.Info("Order from ME", $"order: {new {order.Id, order.Status, message.Header.SequenceNumber}.ToJson()}");
+            }
+
             var @event = new ExecutionProcessedEvent
             {
                 SequenceNumber = message.Header.SequenceNumber,
@@ -283,7 +295,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             }
 
             foreach (var order in limitOrders.Where(x =>
-                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched) 
+                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched)
                 && x.Trades.Any(t => t.Role == TradeRole.Taker)))
             {
                 var orderPlacedEvent = new OrderPlacedEvent
