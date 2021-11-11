@@ -28,6 +28,9 @@ PostProcessingService:
     WalletIdsToLog:
         settings-key: PostProcessingService-WalletIdsToLog
         types: [ Optional, JsonArray ]
+MailerliteServiceClient:
+  GrpcServiceUrl:
+    settings-key: MailerliteServiceClient-GrpcServiceUrl
 MonitoringServiceClient:
     MonitoringServiceUrl:
         settings-key: MonitoringServiceUrl
