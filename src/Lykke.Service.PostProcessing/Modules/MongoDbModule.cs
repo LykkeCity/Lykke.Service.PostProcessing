@@ -1,6 +1,6 @@
 ﻿using Autofac;
-using Lykke.RabbitMq.Mongo.Deduplicator;
 using Lykke.RabbitMqBroker.Deduplication;
+using Lykke.Service.PostProcessing.Services.Deduplicator;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
 using MongoDB.Bson;
