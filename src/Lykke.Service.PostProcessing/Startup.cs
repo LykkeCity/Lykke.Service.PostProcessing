@@ -1,9 +1,12 @@
 ﻿using JetBrains.Annotations;
-using Lykke.Sdk;
 using Lykke.Service.PostProcessing.Settings;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using Antares.Sdk;
+using Autofac;
+using Lykke.SettingsReader;
+using Microsoft.Extensions.Configuration;
 
 namespace Lykke.Service.PostProcessing
 {
@@ -16,10 +19,13 @@ namespace Lykke.Service.PostProcessing
             ApiVersion = "v1"
         };
 
+        private LykkeServiceOptions<AppSettings> _lykkeOptions;
+        private IReloadingManagerWithConfiguration<AppSettings> _settings;
+
         [UsedImplicitly]
-        public IServiceProvider ConfigureServices(IServiceCollection services)
+        public void ConfigureServices(IServiceCollection services)
         {
-            return services.BuildServiceProvider<AppSettings>(options =>
+            (_lykkeOptions, _settings) = services.ConfigureServices<AppSettings>(options =>
             {
                 options.SwaggerOptions = _swaggerOptions;
 
@@ -30,7 +36,7 @@ namespace Lykke.Service.PostProcessing
                 };
             });
         }
-
+        
         [UsedImplicitly]
         public void Configure(IApplicationBuilder app)
         {
@@ -38,6 +44,16 @@ namespace Lykke.Service.PostProcessing
             {
                 options.SwaggerOptions = _swaggerOptions;
             });
+        }
+        
+        [UsedImplicitly]
+        public void ConfigureContainer(ContainerBuilder builder)
+        {
+            var configurationRoot = new ConfigurationBuilder()
+                .AddEnvironmentVariables()
+                .Build();
+
+            builder.ConfigureContainerBuilder(_lykkeOptions, configurationRoot, _settings);
         }
     }
 }

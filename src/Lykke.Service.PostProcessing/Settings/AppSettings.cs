@@ -1,5 +1,5 @@
-﻿using JetBrains.Annotations;
-using Lykke.Sdk.Settings;
+﻿using Antares.Sdk.Settings;
+using JetBrains.Annotations;
 
 namespace Lykke.Service.PostProcessing.Settings
 {
@@ -7,5 +7,7 @@ namespace Lykke.Service.PostProcessing.Settings
     public class AppSettings : BaseAppSettings
     {
         public PostProcessingSettings PostProcessingService { get; set; }
+        
+        public LykkeMailerliteServiceSettings MailerliteServiceClient { set; get; }
     }
 }

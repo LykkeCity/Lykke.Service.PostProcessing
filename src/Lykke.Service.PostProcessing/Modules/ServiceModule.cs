@@ -1,5 +1,6 @@
-﻿using Autofac;
-using Lykke.Sdk;
+﻿using Antares.Sdk.Services;
+using Autofac;
+using Lykke.Mailerlite.ApiClient;
 using Lykke.Service.PostProcessing.RabbitSubscribers;
 using Lykke.Service.PostProcessing.Settings;
 using Lykke.SettingsReader;
@@ -29,7 +30,11 @@ namespace Lykke.Service.PostProcessing.Modules
                 .SingleInstance()
                 .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit))
                 .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.WalletIdsToLog));
-
+            
+            builder
+                .RegisterInstance(new LykkeMailerliteClient(_appSettings.CurrentValue.MailerliteServiceClient.GrpcServiceUrl))
+                .As<ILykkeMailerliteClient>();
+            
             JsonConvert.DefaultSettings = (() =>
             {
                 var settings = new JsonSerializerSettings();

@@ -16,6 +16,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
+using Google.Protobuf.WellKnownTypes;
+using Lykke.Mailerlite.ApiClient;
+using Lykke.Mailerlite.ApiContract;
 using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
@@ -31,6 +34,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly List<IStopable> _subscribers = new List<IStopable>();
         private readonly IDeduplicator _deduplicator;
         private readonly IReadOnlyList<string> _walletIds;
+        private readonly ILykkeMailerliteClient _lykkeMailerliteClient;
         private readonly ILog _log;
 
         private const string QueueName = "lykke.spot.matching.engine.out.events.post-processing";
@@ -41,6 +45,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             [NotNull] RabbitMqSettings rabbitMqSettings,
             [NotNull] ICqrsEngine cqrsEngine,
             [NotNull] IDeduplicator deduplicator,
+            [NotNull] ILykkeMailerliteClient lykkeMailerliteClient,
             IReadOnlyList<string> walletIds)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
@@ -48,6 +53,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             _rabbitMqSettings = rabbitMqSettings ?? throw new ArgumentNullException(nameof(rabbitMqSettings));
             _cqrsEngine = cqrsEngine ?? throw new ArgumentNullException(nameof(cqrsEngine));
             _deduplicator = deduplicator ?? throw new ArgumentNullException(nameof(deduplicator));
+            _lykkeMailerliteClient = lykkeMailerliteClient ?? throw new ArgumentNullException(nameof(lykkeMailerliteClient));
             _walletIds = walletIds;
         }
 
@@ -86,7 +92,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         }
 
 
-        private Task ProcessMessageAsync(CashInEvent message)
+        private async Task ProcessMessageAsync(CashInEvent message)
         {
             var fees = message.CashIn.Fees;
             var fee = fees?.FirstOrDefault()?.Transfer;
@@ -113,7 +119,12 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
 
-            return Task.CompletedTask;
+            await _lykkeMailerliteClient.Customers.UpdateDepositAsync(new UpdateCustomerDepositRequest
+            {
+                CustomerId = message.CashIn.WalletId,
+                RequestId = Guid.NewGuid().ToString(),
+                Timestamp = message.Header.Timestamp.ToTimestamp()
+            });
         }
 
         private Task ProcessMessageAsync(CashOutEvent message)
