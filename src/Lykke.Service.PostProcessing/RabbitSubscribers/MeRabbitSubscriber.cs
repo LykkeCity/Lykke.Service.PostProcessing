@@ -1,4 +1,4 @@
-﻿using Autofac;
+using Autofac;
 using Common;
 using JetBrains.Annotations;
 using Lykke.Common.Log;
@@ -17,6 +17,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using Lykke.Service.PostProcessing.Core;
 using Common.Log;
+using Google.Protobuf.WellKnownTypes;
+using Lykke.Mailerlite.ApiClient;
+using Lykke.Mailerlite.ApiContract;
 using OrderStatus = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.OrderStatus;
 using OrderType = Lykke.MatchingEngine.Connector.Models.Events.OrderType;
 using TradeRole = Lykke.Service.PostProcessing.Contracts.Cqrs.Models.Enums.TradeRole;
@@ -32,6 +35,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly List<IStopable> _subscribers = new List<IStopable>();
         private readonly IDeduplicator _deduplicator;
         private readonly IReadOnlyList<string> _walletIds;
+        private readonly ILykkeMailerliteClient _lykkeMailerliteClient;
         private readonly ILog _log;
 
         private const string QueueName = "lykke.spot.matching.engine.out.events.post-processing";
@@ -42,6 +46,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             [NotNull] RabbitMqSettings rabbitMqSettings,
             [NotNull] ICqrsEngine cqrsEngine,
             [NotNull] IDeduplicator deduplicator,
+            [NotNull] ILykkeMailerliteClient lykkeMailerliteClient,
             IReadOnlyList<string> walletIds)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
@@ -49,6 +54,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             _rabbitMqSettings = rabbitMqSettings ?? throw new ArgumentNullException(nameof(rabbitMqSettings));
             _cqrsEngine = cqrsEngine ?? throw new ArgumentNullException(nameof(cqrsEngine));
             _deduplicator = deduplicator ?? throw new ArgumentNullException(nameof(deduplicator));
+            _lykkeMailerliteClient = lykkeMailerliteClient ?? throw new ArgumentNullException(nameof(lykkeMailerliteClient));
             _walletIds = walletIds;
         }
 
@@ -68,7 +74,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 QueueName = $"{QueueName}.{messageType}",
                 ExchangeName = _rabbitMqSettings.Exchange,
                 RoutingKey = ((int)messageType).ToString(),
-                IsDurable = QueueDurable
+                IsDurable = QueueDurable,
+                DeadLetterExchangeName = $"{QueueName}.{messageType}.dlx"
             };
 
             return new RabbitMqSubscriber<T>(
@@ -87,7 +94,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         }
 
 
-        private Task ProcessMessageAsync(CashInEvent message)
+        private async Task ProcessMessageAsync(CashInEvent message)
         {
             var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(CashInEvent)} message", message.Header.RequestId);
             var fees = message.CashIn.Fees;
@@ -115,9 +122,10 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
             }
 
-            TelemetryHelper.SubmitOperationResult(operation);
-
-            return Task.CompletedTask;
+            await _lykkeMailerliteClient.Customers.UpdateDepositAsync(new UpdateCustomerDepositRequest
+            {
+                CustomerId = message.CashIn.WalletId, RequestId = Guid.NewGuid().ToString(), Timestamp = message.Header.Timestamp.ToTimestamp()
+            });
         }
 
         private Task ProcessMessageAsync(CashOutEvent message)
@@ -190,141 +198,134 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
 
         private Task ProcessMessageAsync(ExecutionEvent message)
         {
-            var operation = TelemetryHelper.InitTelemetryOperation($"Processing {nameof(ExecutionEvent)} message", message.Header.RequestId);
-
-            var orders = message.Orders.Select(x => new OrderModel
+            try
             {
-                Id = Guid.Parse(x.ExternalId),
-                WalletId = Guid.Parse(x.WalletId),
-                Volume = decimal.Parse(x.Volume),
-                AssetPairId = x.AssetPairId,
-                CreateDt = x.CreatedAt,
-                LowerLimitPrice = ParseNullabe(x.LowerLimitPrice),
-                LowerPrice = ParseNullabe(x.LowerPrice),
-                MatchDt = x.LastMatchTime,
-                MatchingId = Guid.Parse(x.Id),
-                Price = ParseNullabe(x.Price),
-                RegisterDt = x.Registered,
-                RejectReason = x.RejectReason,
-                RemainingVolume = ParseNullabe(x.RemainingVolume),
-                Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
-                Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
-                StatusDt = x.StatusDate,
-                Straight = x.OrderType == OrderType.Limit || x.OrderType == OrderType.StopLimit || x.Straight,
-                Type = (Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
-                UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
-                UpperPrice = ParseNullabe(x.UpperPrice),
-                Trades = x.Trades?.Select(t => new TradeModel
+                var orders = message.Orders.Select(x => new OrderModel
                 {
-                    Id = Guid.Parse(t.TradeId),
+                    Id = Guid.Parse(x.ExternalId),
                     WalletId = Guid.Parse(x.WalletId),
+                    Volume = decimal.Parse(x.Volume),
                     AssetPairId = x.AssetPairId,
-                    BaseAssetId = t.BaseAssetId,
-                    BaseVolume = decimal.Parse(t.BaseVolume),
-                    Price = decimal.Parse(t.Price),
-                    Timestamp = t.Timestamp,
-                    QuotingAssetId = t.QuotingAssetId,
-                    QuotingVolume = decimal.Parse(t.QuotingVolume),
-                    Index = t.Index,
-                    Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role,
-                    FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
-                    FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
-                    OppositeWalletId = Guid.Parse(t.OppositeWalletId),
-                }).ToList()
-            }).ToList();
-
-            foreach (var order in orders.Where(x => _walletIds.Contains(x.WalletId.ToString())))
-            {
-                _log.Info("Order from ME", $"order: {new {order.Id, order.Status, message.Header.SequenceNumber}.ToJson()}");
-            }
-
-            var @event = new ExecutionProcessedEvent
-            {
-                SequenceNumber = message.Header.SequenceNumber,
-                Orders = orders
-            };
-            _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
-
-            foreach (var order in orders.Where(x => x.Trades != null && x.Trades.Any()))
-            {
-                var tradeProcessedEvent = new ManualOrderTradeProcessedEvent
-                {
-                    Order = order
-                };
-                _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
-            }
-
-            foreach (var order in message.Orders.Where(x => x.Trades != null && x.Trades.Count > 0))
-            {
-                var orderType = order.OrderType == OrderType.Market ? FeeOperationType.Trade : FeeOperationType.LimitTrade;
-                var orderId = order.Id;
-                foreach (var trade in order.Trades)
-                {
-                    if (trade.Fees != null)
+                    CreateDt = x.CreatedAt,
+                    LowerLimitPrice = ParseNullabe(x.LowerLimitPrice),
+                    LowerPrice = ParseNullabe(x.LowerPrice),
+                    MatchDt = x.LastMatchTime,
+                    MatchingId = Guid.Parse(x.Id),
+                    Price = ParseNullabe(x.Price),
+                    RegisterDt = x.Registered,
+                    RejectReason = x.RejectReason,
+                    RemainingVolume = ParseNullabe(x.RemainingVolume),
+                    Side = (Contracts.Cqrs.Models.Enums.OrderSide)(int)x.Side,
+                    Status = (Contracts.Cqrs.Models.Enums.OrderStatus)(int)x.Status,
+                    StatusDt = x.StatusDate,
+                    Straight = x.OrderType == OrderType.Limit || x.OrderType == OrderType.StopLimit || x.Straight,
+                    Type = (Contracts.Cqrs.Models.Enums.OrderType)(int)x.OrderType,
+                    UpperLimitPrice = ParseNullabe(x.UpperLimitPrice),
+                    UpperPrice = ParseNullabe(x.UpperPrice),
+                    Trades = x.Trades?.Select(t => new TradeModel
                     {
-                        var feeEvent = new FeeChargedEvent
+                        Id = Guid.Parse(t.TradeId),
+                        WalletId = Guid.Parse(x.WalletId),
+                        AssetPairId = x.AssetPairId,
+                        BaseAssetId = t.BaseAssetId,
+                        BaseVolume = decimal.Parse(t.BaseVolume),
+                        Price = decimal.Parse(t.Price),
+                        Timestamp = t.Timestamp,
+                        QuotingAssetId = t.QuotingAssetId,
+                        QuotingVolume = decimal.Parse(t.QuotingVolume),
+                        Index = t.Index,
+                        Role = (Contracts.Cqrs.Models.Enums.TradeRole)(int)t.Role,
+                        FeeSize = ParseNullabe(t.Fees?.FirstOrDefault()?.Volume),
+                        FeeAssetId = t.Fees?.FirstOrDefault()?.AssetId,
+                        OppositeWalletId = Guid.Parse(t.OppositeWalletId),
+                    }).ToList()
+                }).ToList();
+
+                foreach (var order in orders.Where(x => _walletIds.Contains(x.WalletId.ToString())))
+                {
+                    _log.Info("Order from ME", $"order: {new { order.Id, order.Status, message.Header.SequenceNumber }.ToJson()}");
+                }
+
+                var @event = new ExecutionProcessedEvent { SequenceNumber = message.Header.SequenceNumber, Orders = orders };
+                _cqrsEngine.PublishEvent(@event, BoundedContext.Name);
+
+                foreach (var order in orders.Where(x => x.Trades != null && x.Trades.Any()))
+                {
+                    var tradeProcessedEvent = new ManualOrderTradeProcessedEvent { Order = order };
+
+                    _cqrsEngine.PublishEvent(tradeProcessedEvent, BoundedContext.Name);
+                }
+
+                foreach (var order in message.Orders.Where(x => x.Trades != null && x.Trades.Count > 0))
+                {
+                    var orderType = order.OrderType == OrderType.Market ? FeeOperationType.Trade : FeeOperationType.LimitTrade;
+                    var orderId = order.Id;
+                    foreach (var trade in order.Trades)
+                    {
+                        if (trade.Fees != null)
                         {
-                            OperationId = orderId,
-                            OperationType = orderType,
-                            Fee = trade.Fees.ToJson()
-                        };
-                        _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                            var feeEvent = new FeeChargedEvent { OperationId = orderId, OperationType = orderType, Fee = trade.Fees.ToJson() };
+
+                            _cqrsEngine.PublishEvent(feeEvent, BoundedContext.Name);
+                        }
                     }
                 }
-            }
 
-            var limitOrders = orders.Where(x => x.Type == Contracts.Cqrs.Models.Enums.OrderType.Limit ||
-                                                x.Type == Contracts.Cqrs.Models.Enums.OrderType.StopLimit).ToList();
-            foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Cancelled))
-            {
-                var orderCancelledEvent = new OrderCancelledEvent
+                var limitOrders = orders.Where(x => x.Type == Contracts.Cqrs.Models.Enums.OrderType.Limit ||
+                                                    x.Type == Contracts.Cqrs.Models.Enums.OrderType.StopLimit).ToList();
+                foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Cancelled))
                 {
-                    OrderId = order.Id,
-                    Status = order.Status,
-                    AssetPairId = order.AssetPairId,
-                    Price = order.Price,
-                    Timestamp = order.StatusDt,
-                    Volume = order.Volume,
-                    WalletId = order.WalletId
-                };
-                _cqrsEngine.PublishEvent(orderCancelledEvent, BoundedContext.Name);
-            }
+                    var orderCancelledEvent = new OrderCancelledEvent
+                    {
+                        OrderId = order.Id,
+                        Status = order.Status,
+                        AssetPairId = order.AssetPairId,
+                        Price = order.Price,
+                        Timestamp = order.StatusDt,
+                        Volume = order.Volume,
+                        WalletId = order.WalletId
+                    };
+                    _cqrsEngine.PublishEvent(orderCancelledEvent, BoundedContext.Name);
+                }
 
-            foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Placed))
-            {
-                var orderPlacedEvent = new OrderPlacedEvent
+                foreach (var order in limitOrders.Where(x => x.Status == OrderStatus.Placed))
                 {
-                    OrderId = order.Id,
-                    Status = order.Status,
-                    AssetPairId = order.AssetPairId,
-                    Price = order.Price,
-                    Timestamp = order.StatusDt,
-                    Volume = order.Volume,
-                    WalletId = order.WalletId,
-                    CreateDt = order.CreateDt
-                };
-                _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
-            }
+                    var orderPlacedEvent = new OrderPlacedEvent
+                    {
+                        OrderId = order.Id,
+                        Status = order.Status,
+                        AssetPairId = order.AssetPairId,
+                        Price = order.Price,
+                        Timestamp = order.StatusDt,
+                        Volume = order.Volume,
+                        WalletId = order.WalletId,
+                        CreateDt = order.CreateDt
+                    };
+                    _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
+                }
 
-            foreach (var order in limitOrders.Where(x =>
-                (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched)
-                && x.Trades.Any(t => t.Role == TradeRole.Taker)))
-            {
-                var orderPlacedEvent = new OrderPlacedEvent
+                foreach (var order in limitOrders.Where(x =>
+                    (x.Status == OrderStatus.Matched || x.Status == OrderStatus.PartiallyMatched)
+                    && x.Trades.Any(t => t.Role == TradeRole.Taker)))
                 {
-                    OrderId = order.Id,
-                    Status = order.Status,
-                    AssetPairId = order.AssetPairId,
-                    Price = order.Price,
-                    Timestamp = order.StatusDt,
-                    Volume = order.Volume,
-                    WalletId = order.WalletId,
-                    CreateDt = order.CreateDt
-                };
-                _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
+                    var orderPlacedEvent = new OrderPlacedEvent
+                    {
+                        OrderId = order.Id,
+                        Status = order.Status,
+                        AssetPairId = order.AssetPairId,
+                        Price = order.Price,
+                        Timestamp = order.StatusDt,
+                        Volume = order.Volume,
+                        WalletId = order.WalletId,
+                        CreateDt = order.CreateDt
+                    };
+                    _cqrsEngine.PublishEvent(orderPlacedEvent, BoundedContext.Name);
+                }
             }
-
-            TelemetryHelper.SubmitOperationResult(operation);
+            catch (Exception ex)
+            {
+                _log.Error(message: "Error processing orders", exception:ex, context: message.Orders.Select(x => new { Id = x.ExternalId, ClientId = x.WalletId, Status = x.Status }).ToJson());
+            }
 
             return Task.CompletedTask;
         }
