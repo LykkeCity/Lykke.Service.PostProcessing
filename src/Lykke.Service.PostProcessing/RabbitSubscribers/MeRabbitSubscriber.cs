@@ -34,6 +34,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
         private readonly List<IStopable> _subscribers = new List<IStopable>();
         private readonly IDeduplicator _deduplicator;
         private readonly IReadOnlyList<string> _walletIds;
+        private readonly bool _useDeadletterExchange;
         private readonly ILykkeMailerliteClient _lykkeMailerliteClient;
         private readonly ILog _log;
 
@@ -46,7 +47,8 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             [NotNull] ICqrsEngine cqrsEngine,
             [NotNull] IDeduplicator deduplicator,
             [NotNull] ILykkeMailerliteClient lykkeMailerliteClient,
-            IReadOnlyList<string> walletIds)
+            IReadOnlyList<string> walletIds,
+            bool useDeadletterExchange)
         {
             _logFactory = logFactory ?? throw new ArgumentNullException(nameof(logFactory));
             _log = _logFactory.CreateLog(this);
@@ -55,6 +57,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             _deduplicator = deduplicator ?? throw new ArgumentNullException(nameof(deduplicator));
             _lykkeMailerliteClient = lykkeMailerliteClient ?? throw new ArgumentNullException(nameof(lykkeMailerliteClient));
             _walletIds = walletIds;
+            _useDeadletterExchange = useDeadletterExchange;
         }
 
         public void Start()
@@ -73,9 +76,13 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
                 QueueName = $"{QueueName}.{messageType}",
                 ExchangeName = _rabbitMqSettings.Exchange,
                 RoutingKey = ((int)messageType).ToString(),
-                IsDurable = QueueDurable,
-                DeadLetterExchangeName = $"{QueueName}.{messageType}.dlx"
+                IsDurable = QueueDurable
             };
+
+            if (_useDeadletterExchange)
+            {
+                settings.DeadLetterExchangeName = $"{QueueName}.{messageType}.dlx";
+            }
 
             return new RabbitMqSubscriber<T>(
                     _logFactory,
@@ -315,6 +322,7 @@ namespace Lykke.Service.PostProcessing.RabbitSubscribers
             catch (Exception ex)
             {
                 _log.Error(message: "Error processing orders", exception:ex, context: message.Orders.Select(x => new { Id = x.ExternalId, ClientId = x.WalletId, Status = x.Status }).ToJson());
+                throw;
             }
 
             return Task.CompletedTask;
