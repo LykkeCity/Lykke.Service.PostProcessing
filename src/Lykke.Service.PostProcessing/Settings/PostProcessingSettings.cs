@@ -16,5 +16,8 @@ namespace Lykke.Service.PostProcessing.Settings
 
         [Optional]
         public IReadOnlyList<string> WalletIdsToLog { get; set; } = Array.Empty<string>();
+
+        [Optional]
+        public bool UseDeadletterExchange { get; set; }
     }
 }
