@@ -29,12 +29,13 @@ namespace Lykke.Service.PostProcessing.Modules
                 .As<IStartable>()
                 .SingleInstance()
                 .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.MatchingEngineRabbit))
-                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.WalletIdsToLog));
-            
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.WalletIdsToLog))
+                .WithParameter(TypedParameter.From(_appSettings.CurrentValue.PostProcessingService.UseDeadletterExchange));
+
             builder
                 .RegisterInstance(new LykkeMailerliteClient(_appSettings.CurrentValue.MailerliteServiceClient.GrpcServiceUrl))
                 .As<ILykkeMailerliteClient>();
-            
+
             JsonConvert.DefaultSettings = (() =>
             {
                 var settings = new JsonSerializerSettings();
