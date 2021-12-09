@@ -28,6 +28,9 @@ PostProcessingService:
     WalletIdsToLog:
         settings-key: PostProcessingService-WalletIdsToLog
         types: [ Optional, JsonArray ]
+    UseDeadletterExchange:
+        settings-key: PostProcessingService-UseDeadletterExchange
+        types: [ Optional ]
 MailerliteServiceClient:
   GrpcServiceUrl:
     settings-key: MailerliteServiceClient-GrpcServiceUrl
