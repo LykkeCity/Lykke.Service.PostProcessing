@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Lykke.RabbitMq.Mongo" Version="1.0.2" />
     <PackageReference Include="MongoDB.Bson" Version="2.13.2" />
-    <PackageReference Include="MongoDB.Driver" Version="2.13.2" />
+    <PackageReference Include="MongoDB.Driver" Version="2.19.0" />
     <PackageReference Include="MongoDB.Driver.Core" Version="2.13.2" />
   </ItemGroup>
 </Project>
